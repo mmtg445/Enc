@@ -1,4 +1,4 @@
-name: Deploy to Heroku (Direct Input)
+name: Deploy to Heroku with Docker
 
 on:
   workflow_dispatch:
@@ -42,11 +42,12 @@ jobs:
         echo "machine api.heroku.com" > ~/.netrc
         echo "  login ${{ github.event.inputs.HEROKU_EMAIL }}" >> ~/.netrc
         echo "  password ${{ github.event.inputs.HEROKU_API_KEY }}" >> ~/.netrc
-        echo "machine git.heroku.com" >> ~/.netrc
-        echo "  login ${{ github.event.inputs.HEROKU_EMAIL }}" >> ~/.netrc
-        echo "  password ${{ github.event.inputs.HEROKU_API_KEY }}" >> ~/.netrc
         chmod 600 ~/.netrc
         heroku auth:token
+
+    - name: Set Heroku stack to container
+      run: |
+        heroku stack:set container --app ${{ github.event.inputs.HEROKU_APP_NAME }}
 
     - name: Log in to Heroku Container Registry
       run: |
