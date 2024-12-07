@@ -1,29 +1,7 @@
-name: Deploy to Heroku with Docker
+bname: Manual Deploy to Heroku
 
 on:
-  workflow_dispatch:
-    inputs:
-      HEROKU_APP_NAME:
-        description: "Enter your Heroku App Name"
-        required: true
-      HEROKU_EMAIL:
-        description: "Enter your Heroku Email"
-        required: true
-      HEROKU_API_KEY:
-        description: "Enter your Heroku API Key"
-        required: true
-      APP_ID:
-        description: "Enter your Telegram APP_ID"
-        required: true
-      API_HASH:
-        description: "Enter your Telegram API_HASH"
-        required: true
-      BOT_TOKEN:
-        description: "Enter your Telegram BOT_TOKEN"
-        required: true
-      OWNER:
-        description: "Enter the OWNER Telegram User ID"
-        required: true
+  workflow_dispatch: # ম্যানুয়াল ট্রিগার করার জন্য
 
 jobs:
   deploy:
@@ -33,35 +11,67 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install Heroku CLI
+    - name: Install dependencies (optional, যদি দরকার হয়)
       run: |
+        if [ -f package.json ]; then
+          npm install
+        fi
+
+    - name: Request Heroku credentials
+      run: echo "Heroku credentials required. Please provide when prompted."
+
+    - name: Deploy to Heroku
+      uses: akhileshns/heroku-deploy@v4.1.6
+      with:
+        heroku_api_key: ${{ github.event.inputs.heroku_api_key }}
+        heroku_app_name: ${{ github.event.inputs.heroku_app_name }}
+        heroku_email: ${{ github.event.inputs.heroku_email }}
+
+    - name: Upload .env to Heroku
+      run: |
+        # Install Heroku CLI
         curl https://cli-assets.heroku.com/install.sh | sh
+        
+        # Login to Heroku
+        heroku login --api-key ${{ github.event.inputs.heroku_api_key }}
+        
+        # Push environment variables from provided .env
+        heroku config:set $(cat .env | sed '/^$/d; /#[[:print:]]*$/d' | xargs) -a ${{ github.event.inputs.heroku_app_name }name: Manual Deploy to Heroku
 
-    - name: Log in to Heroku
-      run: |
-        echo "machine api.heroku.com" > ~/.netrc
-        echo "  login ${{ github.event.inputs.HEROKU_EMAIL }}" >> ~/.netrc
-        echo "  password ${{ github.event.inputs.HEROKU_API_KEY }}" >> ~/.netrc
-        chmod 600 ~/.netrc
-        heroku auth:token
+on:
+  workflow_dispatch: # ম্যানুয়াল ট্রিগার করার জন্য
 
-    - name: Set Heroku stack to container
-      run: |
-        heroku stack:set container --app ${{ github.event.inputs.HEROKU_APP_NAME }}
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-    - name: Log in to Heroku Container Registry
-      run: |
-        echo ${{ github.event.inputs.HEROKU_API_KEY }} | docker login --username=_ --password-stdin registry.heroku.com
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-    - name: Build and push Docker container to Heroku
+    - name: Install dependencies (optional, যদি দরকার হয়)
       run: |
-        heroku container:push web --app ${{ github.event.inputs.HEROKU_APP_NAME }}
-        heroku container:release web --app ${{ github.event.inputs.HEROKU_APP_NAME }}
+        if [ -f package.json ]; then
+          npm install
+        fi
 
-    - name: Set environment variables in Heroku
+    - name: Request Heroku credentials
+      run: echo "Heroku credentials required. Please provide when prompted."
+
+    - name: Deploy to Heroku
+      uses: akhileshns/heroku-deploy@v4.1.6
+      with:
+        heroku_api_key: ${{ github.event.inputs.heroku_api_key }}
+        heroku_app_name: ${{ github.event.inputs.heroku_app_name }}
+        heroku_email: ${{ github.event.inputs.heroku_email }}
+
+    - name: Upload .env to Heroku
       run: |
-        heroku config:set APP_ID=${{ github.event.inputs.APP_ID }} \
-                          API_HASH=${{ github.event.inputs.API_HASH }} \
-                          BOT_TOKEN=${{ github.event.inputs.BOT_TOKEN }} \
-                          OWNER=${{ github.event.inputs.OWNER }} \
-                          --app ${{ github.event.inputs.HEROKU_APP_NAME }}
+        # Install Heroku CLI
+        curl https://cli-assets.heroku.com/install.sh | sh
+        
+        # Login to Heroku
+        heroku login --api-key ${{ github.event.inputs.heroku_api_key }}
+        
+        # Push environment variables from provided .env
+        heroku config:set $(cat .env | sed '/^$/d; /#[[:print:]]*$/d' | xargs) -a ${{ github.event.inputs.heroku_app_name }}
