@@ -30,11 +30,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Log in to the Heroku Container Registry
+    - name: Install Heroku CLI
+      run: |
+        curl https://cli-assets.heroku.com/install.sh | sh
+
+    - name: Log in to Heroku Container Registry
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
       run: |
-        echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
+        heroku container:login
 
     - name: Build and push Docker container to Heroku
       run: |
